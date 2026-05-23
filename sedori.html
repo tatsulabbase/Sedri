@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="仕入れトレーナー"/>
+<title>仕入れ判断トレーナー</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#fafaf9;font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN',system-ui,sans-serif;color:#111827}
+input,select,textarea,button{font-family:inherit;-webkit-appearance:none;appearance:none}
+.page{max-width:920px;margin:0 auto;padding:20px 14px 80px}
+header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+h1{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.sub{font-size:12px;color:#6b7280;margin-top:3px}
+.hbtns{display:flex;gap:8px}
+.stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+.stat-box{background:#fff;border:1px solid #ececec;border-radius:12px;padding:10px 12px}
+.stat-label{font-size:10px;color:#9ca3af;font-weight:600}
+.stat-value{font-size:18px;font-weight:800;margin-top:2px}
+.stat-hint{font-size:10px;color:#9ca3af;margin-top:2px}
+.card{background:#fff;border:1px solid #ececec;border-radius:14px;padding:14px;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:700;margin-bottom:12px;color:#374151}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.span2{grid-column:span 2}
+label.lbl{display:block;font-size:11px;color:#6b7280;font-weight:600;margin-bottom:4px}
+.inp{width:100%;padding:10px 11px;border:1px solid #e5e7eb;border-radius:9px;font-size:15px;outline:none;background:#fcfcfc;color:#111827}
+.inp:focus{border-color:#6366f1}
+.calc-bar{display:flex;align-items:center;gap:14px;margin-top:14px;padding:12px;background:#f9fafb;border-radius:10px;flex-wrap:wrap}
+.calc-item{display:flex;flex-direction:column}
+.calc-lbl{font-size:10px;color:#9ca3af;font-weight:600}
+.calc-val{font-size:16px;font-weight:800}
+.calc-muted{font-size:14px;font-weight:600;color:#9ca3af}
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{padding:6px 13px;border-radius:20px;font-size:13px;font-weight:600;border:1px solid #e5e7eb;background:#fff;color:#374151;cursor:pointer}
+.chip.active{background:#111827;color:#fff;border-color:#111827}
+.list{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:10px;background:#fff;border:1px solid #ececec;border-radius:12px;padding:12px}
+.row-left{flex:1;min-width:0}
+.row-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.row-name{font-weight:700;font-size:14px}
+.badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px}
+.call-tag{font-size:11px;color:#6b7280}
+.row-meta{font-size:12px;color:#6b7280}
+.row-memo{font-size:12px;color:#374151;margin-top:2px;font-style:italic}
+.row-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:72px}
+.row-profit{font-size:16px;font-weight:800}
+.row-roi{font-size:11px;color:#6b7280}
+.row-actions{display:flex;gap:5px;margin-top:2px}
+.primary-btn{padding:10px 18px;background:#111827;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer}
+.ghost-btn{padding:8px 14px;background:#fff;color:#374151;border:1px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer}
+.mini-btn{padding:4px 10px;background:#f3f4f6;color:#374151;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer}
+.mini-del{padding:4px 10px;background:#fee2e2;color:#b91c1c;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer}
+.empty{text-align:center;padding:40px 20px;color:#6b7280;font-size:14px;line-height:1.8}
+footer{font-size:11px;color:#9ca3af;text-align:center;margin-top:24px;line-height:1.7}
+.green{color:#15803d}
+.red{color:#b91c1c}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div>
+      <h1>仕入れ判断トレーナー</h1>
+      <p class="sub">電脳せどりで目を鍛える · 記録して答え合わせ</p>
+    </div>
+    <div class="hbtns">
+      <button class="ghost-btn" onclick="importClick()">CSV読込</button>
+      <button class="ghost-btn" onclick="exportCsv()">CSV保存</button>
+      <input id="csvFile" type="file" accept=".csv" style="display:none" onchange="importCsv(this)"/>
+    </div>
+  </header>
+
+  <div class="stats-row" id="statsRow"></div>
+
+  <div class="card">
+    <div class="card-title" id="formTitle">新しい商品を記録</div>
+    <div class="form-grid">
+      <div class="span2">
+        <label class="lbl">商品名</label>
+        <input class="inp" id="f_name" placeholder="例: ○○ワイヤレスイヤホン" oninput="calcLive()"/>
+      </div>
+      <div>
+        <label class="lbl">JANコード</label>
+        <input class="inp" id="f_jan" placeholder="4901234567890" inputmode="numeric"/>
+      </div>
+      <div>
+        <label class="lbl">販売先</label>
+        <select class="inp" id="f_platform" onchange="calcLive()">
+          <option>メルカリ</option>
+          <option>Amazon(FBA)</option>
+          <option>Amazon(自己発送)</option>
+          <option>ヤフオク</option>
+          <option>その他</option>
+        </select>
+      </div>
+      <div>
+        <label class="lbl">仕入れ価格</label>
+        <input class="inp" id="f_buy" type="number" inputmode="numeric" placeholder="円" oninput="calcLive()"/>
+      </div>
+      <div>
+        <label class="lbl">想定売価</label>
+        <input class="inp" id="f_sell" type="number" inputmode="numeric" placeholder="円" oninput="calcLive()"/>
+      </div>
+      <div>
+        <label class="lbl">送料・梱包</label>
+        <input class="inp" id="f_ship" type="number" inputmode="numeric" placeholder="円" oninput="calcLive()"/>
+      </div>
+      <div>
+        <label class="lbl">自分の判断</label>
+        <select class="inp" id="f_call">
+          <option value="buy">仕入れる</option>
+          <option value="pass">見送る</option>
+        </select>
+      </div>
+      <div>
+        <label class="lbl">ステータス</label>
+        <select class="inp" id="f_status">
+          <option value="watching">判断中</option>
+          <option value="bought">仕入れた</option>
+          <option value="skipped">見送り</option>
+          <option value="sold">売れた</option>
+          <option value="loss">失敗</option>
+        </select>
+      </div>
+      <div class="span2">
+        <label class="lbl">実際の売価（答え合わせ）</label>
+        <input class="inp" id="f_actual" type="number" inputmode="numeric" placeholder="売れた金額"/>
+      </div>
+      <div class="span2">
+        <label class="lbl">メモ</label>
+        <input class="inp" id="f_memo" placeholder="判断理由・気づきなど"/>
+      </div>
+    </div>
+    <div class="calc-bar">
+      <div class="calc-item">
+        <span class="calc-lbl">想定利益</span>
+        <span class="calc-val" id="lv_profit">¥0</span>
+      </div>
+      <div class="calc-item">
+        <span class="calc-lbl">利益率</span>
+        <span class="calc-val" id="lv_margin">0.0%</span>
+      </div>
+      <div class="calc-item">
+        <span class="calc-lbl">ROI</span>
+        <span class="calc-val" id="lv_roi">0.0%</span>
+      </div>
+      <div class="calc-item">
+        <span class="calc-lbl">手数料</span>
+        <span class="calc-muted" id="lv_fee">¥0</span>
+      </div>
+      <button class="primary-btn" id="submitBtn" onclick="submitForm()">記録する</button>
+      <button class="ghost-btn" id="cancelBtn" style="display:none" onclick="cancelEdit()">キャンセル</button>
+    </div>
+  </div>
+
+  <div class="filter-row" id="filterRow"></div>
+  <div class="list" id="list"></div>
+  <footer>データはこのブラウザ内だけに保持されるで。閉じる前に必ず「CSV保存」してな。次回は「CSV読込」で復元できる。</footer>
+</div>
+
+<script>
+const FEES = {"メルカリ":0.10,"Amazon(FBA)":0.15,"Amazon(自己発送)":0.10,"ヤフオク":0.10,"その他":0.10};
+const STATUS = {
+  watching:{label:"判断中",color:"#6b7280",bg:"#f3f4f6"},
+  bought:  {label:"仕入れた",color:"#1d4ed8",bg:"#dbeafe"},
+  skipped: {label:"見送り",color:"#92400e",bg:"#fef3c7"},
+  sold:    {label:"売れた",color:"#15803d",bg:"#dcfce7"},
+  loss:    {label:"失敗",color:"#b91c1c",bg:"#fee2e2"},
+};
+
+let items = [], editingId = null, filter = "all";
+
+function load(){
+  try{const s=localStorage.getItem("sedori_items");items=s?JSON.parse(s):[];}catch{items=[];}
+}
+function save(){
+  try{localStorage.setItem("sedori_items",JSON.stringify(items));}catch{}
+}
+function yen(n){return(n<0?"-":"")+"¥"+Math.abs(Math.round(n)).toLocaleString("ja-JP");}
+function calc(buy,sell,ship,platform){
+  const b=parseFloat(buy)||0,s=parseFloat(sell)||0,sh=parseFloat(ship)||0;
+  const fee=s*(FEES[platform]??0.10);
+  const profit=s-b-sh-fee;
+  const margin=s>0?(profit/s)*100:0;
+  const roi=b>0?(profit/b)*100:0;
+  return{profit,margin,roi,fee};
+}
+
+function calcLive(){
+  const r=calc(v("f_buy"),v("f_sell"),v("f_ship"),v("f_platform"));
+  const el=id("lv_profit");
+  el.textContent=yen(r.profit);
+  el.className="calc-val "+(r.profit>=0?"green":"red");
+  id("lv_margin").textContent=r.margin.toFixed(1)+"%";
+  id("lv_roi").textContent=r.roi.toFixed(1)+"%";
+  id("lv_fee").textContent=yen(r.fee);
+}
+
+function v(elId){return id(elId).value;}
+function id(x){return document.getElementById(x);}
+
+function getForm(){
+  return{
+    name:v("f_name").trim(),jan:v("f_jan").trim(),platform:v("f_platform"),
+    buyPrice:v("f_buy"),expectedSellPrice:v("f_sell"),shipCost:v("f_ship"),
+    myCall:v("f_call"),status:v("f_status"),actualSellPrice:v("f_actual"),memo:v("f_memo").trim()
+  };
+}
+function setForm(it){
+  id("f_name").value=it.name||"";id("f_jan").value=it.jan||"";
+  id("f_platform").value=it.platform||"メルカリ";
+  id("f_buy").value=it.buyPrice||"";id("f_sell").value=it.expectedSellPrice||"";
+  id("f_ship").value=it.shipCost||"";id("f_call").value=it.myCall||"buy";
+  id("f_status").value=it.status||"watching";id("f_actual").value=it.actualSellPrice||"";
+  id("f_memo").value=it.memo||"";calcLive();
+}
+function clearForm(){
+  ["f_name","f_jan","f_buy","f_sell","f_ship","f_actual","f_memo"].forEach(x=>id(x).value="");
+  id("f_platform").value="メルカリ";id("f_call").value="buy";id("f_status").value="watching";calcLive();
+}
+
+function submitForm(){
+  const f=getForm();if(!f.name)return alert("商品名を入れてな！");
+  if(editingId){
+    items=items.map(it=>it.id===editingId?{...it,...f}:it);
+    editingId=null;id("formTitle").textContent="新しい商品を記録";
+    id("submitBtn").textContent="記録する";id("cancelBtn").style.display="none";
+  }else{
+    items=[{...f,id:Date.now(),createdAt:new Date().toISOString()},...items];
+  }
+  clearForm();save();render();
+}
+function cancelEdit(){
+  editingId=null;clearForm();
+  id("formTitle").textContent="新しい商品を記録";
+  id("submitBtn").textContent="記録する";id("cancelBtn").style.display="none";
+}
+function editItem(itemId){
+  const it=items.find(x=>x.id===itemId);if(!it)return;
+  editingId=itemId;setForm(it);
+  id("formTitle").textContent="編集中";id("submitBtn").textContent="更新する";
+  id("cancelBtn").style.display="";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function delItem(itemId){
+  if(!confirm("削除する？"))return;
+  items=items.filter(x=>x.id!==itemId);
+  if(editingId===itemId)cancelEdit();
+  save();render();
+}
+
+function renderStats(){
+  const decided=items.filter(it=>it.status==="sold"||it.status==="loss");
+  const hit=decided.filter(it=>it.myCall==="buy"?it.status==="sold":it.status==="loss").length;
+  const acc=decided.length?(hit/decided.length*100):0;
+  const sold=items.filter(it=>it.status==="sold");
+  const realized=sold.reduce((s,it)=>{
+    const sp=parseFloat(it.actualSellPrice)||parseFloat(it.expectedSellPrice)||0;
+    return s+calc(it.buyPrice,sp,it.shipCost,it.platform).profit;
+  },0);
+  const invested=items.filter(it=>["bought","sold","loss"].includes(it.status))
+    .reduce((s,it)=>s+(parseFloat(it.buyPrice)||0),0);
+  const data=[
+    {label:"記録数",value:String(items.length),hint:"",accent:""},
+    {label:"判断精度",value:decided.length?acc.toFixed(0)+"%":"—",hint:decided.length?decided.length+"件で検証":"",accent:""},
+    {label:"確定利益",value:yen(realized),hint:"",accent:realized>=0?"#15803d":"#b91c1c"},
+    {label:"投下資金",value:yen(invested),hint:"",accent:""},
+  ];
+  id("statsRow").innerHTML=data.map(d=>`
+    <div class="stat-box">
+      <div class="stat-label">${d.label}</div>
+      <div class="stat-value" style="color:${d.accent||'#111827'}">${d.value}</div>
+      ${d.hint?`<div class="stat-hint">${d.hint}</div>`:""}
+    </div>`).join("");
+}
+
+function renderFilter(){
+  const filters=[{k:"all",label:"すべて",color:""},...Object.entries(STATUS).map(([k,v])=>({k,label:v.label,color:v.color}))];
+  id("filterRow").innerHTML=filters.map(f=>`
+    <button class="chip${filter===f.k?" active":""}"
+      style="${filter===f.k&&f.color?"background:"+f.color+";border-color:"+f.color:""}"
+      onclick="setFilter('${f.k}')">${f.label}</button>`).join("");
+}
+function setFilter(f){filter=f;render();}
+
+function renderList(){
+  const filtered=filter==="all"?items:items.filter(it=>it.status===filter);
+  if(!filtered.length){
+    id("list").innerHTML=`<div class="empty">まだ記録がないで。電脳で見つけた商品を上から記録していこか。<br><span style="font-size:13px;color:#9ca3af">判断精度は「仕入れた→売れた」「見送り→失敗」が一致した割合やで。</span></div>`;
+    return;
+  }
+  id("list").innerHTML=filtered.map(it=>{
+    const sp=parseFloat(it.actualSellPrice)||parseFloat(it.expectedSellPrice)||0;
+    const r=calc(it.buyPrice,sp,it.shipCost,it.platform);
+    const st=STATUS[it.status]||STATUS.watching;
+    const profitColor=r.profit>=0?"#15803d":"#b91c1c";
+    return`<div class="row">
+      <div class="row-left">
+        <div class="row-top">
+          <span class="row-name">${esc(it.name)}</span>
+          <span class="badge" style="color:${st.color};background:${st.bg}">${st.label}</span>
+          <span class="call-tag">${it.myCall==="buy"?"🟢仕入":"⚪見送"}</span>
+        </div>
+        <div class="row-meta">${esc(it.platform)} · 仕入 ${yen(parseFloat(it.buyPrice)||0)} → 売 ${yen(sp)}${it.jan?` · JAN ${esc(it.jan)}`:""}</div>
+        ${it.memo?`<div class="row-memo">${esc(it.memo)}</div>`:""}
+      </div>
+      <div class="row-right">
+        <div class="row-profit" style="color:${profitColor}">${yen(r.profit)}</div>
+        <div class="row-roi">ROI ${r.roi.toFixed(0)}%</div>
+        <div class="row-actions">
+          <button class="mini-btn" onclick="editItem(${it.id})">編集</button>
+          <button class="mini-del" onclick="delItem(${it.id})">削除</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+function render(){renderStats();renderFilter();renderList();}
+
+function exportCsv(){
+  const headers=["id","createdAt","name","jan","platform","buyPrice","expectedSellPrice","shipCost","status","myCall","actualSellPrice","memo"];
+  const rows=items.map(it=>headers.map(h=>`"${String(it[h]??"").replace(/"/g,'""')}"`).join(","));
+  const csv="﻿"+[headers.join(","),...rows].join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;
+  a.download="sedori_"+new Date().toISOString().slice(0,10)+".csv";
+  a.click();URL.revokeObjectURL(url);
+}
+function importClick(){id("csvFile").click();}
+function importCsv(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const text=String(e.target.result).replace(/^﻿/,"");
+    const lines=text.split(/\r?\n/).filter(l=>l.trim());
+    const headers=lines[0].split(",").map(h=>h.replace(/^"|"$/g,""));
+    const parsed=lines.slice(1).map(line=>{
+      const cells=[];let cur="",inQ=false;
+      for(let i=0;i<line.length;i++){
+        const c=line[i];
+        if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else{inQ=!inQ;}}
+        else if(c===','&&!inQ){cells.push(cur);cur="";}
+        else{cur+=c;}
+      }
+      cells.push(cur);
+      const obj={};headers.forEach((h,i)=>{obj[h]=cells[i]||"";});
+      obj.id=obj.id?Number(obj.id):Date.now()+Math.random();return obj;
+    });
+    items=parsed;save();render();alert("読み込んだで！"+parsed.length+"件");
+  };
+  reader.readAsText(file);input.value="";
+}
+
+load();render();calcLive();
+</script>
+</body>
+</html>
